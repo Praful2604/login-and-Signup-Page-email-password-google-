@@ -1,7 +1,8 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_clone/auth/login_page.dart';
-import 'package:instagram_clone/screen/home_screen.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -14,7 +15,6 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final nameController = TextEditingController();
-
   bool isLoading = false;
 
   @override
@@ -32,7 +32,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (email.isEmpty || password.isEmpty || name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Please fill all fields")),
+        const SnackBar(content: Text("Please fill all fields")),
       );
       return;
     }
@@ -40,25 +40,28 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => isLoading = true);
 
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+
+      await userCredential.user!.sendEmailVerification();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Registration Successful"),
-        backgroundColor: Colors.green,),
-
+        const SnackBar(
+          content: Text("Verification email sent. Please check your inbox."),
+          backgroundColor: Colors.green,
+        ),
       );
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => LoginPage()),
+        MaterialPageRoute(builder: (_) => const LoginPage()),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}"),
-        backgroundColor: Colors.red,),
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       setState(() => isLoading = false);
@@ -76,60 +79,47 @@ class _RegisterPageState extends State<RegisterPage> {
             const SizedBox(height: 80),
             const CircleAvatar(
               radius: 80,
-              backgroundImage: AssetImage('assets/login_images/apple_logo.png'),
+              backgroundImage:
+              AssetImage('assets/login_images/apple_logo.png'),
             ),
             const SizedBox(height: 16),
-            const Text(
-              "Photogram",
-              style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold),
-            ),
-            const Text(
-              "Elevating a photography...",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.red),
-            ),
-            const Text(
-              "Signup Page",
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.blue),
-            ),
+            const Text("Photogram", style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold)),
+            const Text("Elevating a photography...",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.red)),
+            const Text("Signup Page",
+                style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.blue)),
             const SizedBox(height: 40),
-
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(50)),
-                ),
+                    borderRadius: BorderRadius.all(Radius.circular(50))),
                 labelText: "Enter Your Name",
                 prefixIcon: Icon(Icons.person),
               ),
             ),
             const SizedBox(height: 20),
-
             TextField(
               controller: emailController,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(50)),
-                ),
+                    borderRadius: BorderRadius.all(Radius.circular(50))),
                 labelText: "Enter Email ID",
                 prefixIcon: Icon(Icons.email),
               ),
             ),
             const SizedBox(height: 20),
-
             TextField(
               controller: passwordController,
               obscureText: true,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(50)),
-                ),
+                    borderRadius: BorderRadius.all(Radius.circular(50))),
                 labelText: "Password",
                 suffixIcon: Icon(Icons.remove_red_eye),
               ),
             ),
             const SizedBox(height: 30),
-
             isLoading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
@@ -141,28 +131,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              child: const Text(
-                "Sign Up",
-                style: TextStyle(fontSize: 20),
-              ),
+              child: const Text("Sign Up", style: TextStyle(fontSize: 20)),
             ),
             const SizedBox(height: 20),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  onPressed: () {}, // implement Google sign in
-                  icon: Image.asset('assets/login_images/google_logo.png', height: 40),
-                ),
-                IconButton(
-                  onPressed: () {}, // implement Apple sign in
-                  icon: Image.asset('assets/login_images/apple_logo.png', height: 40),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
             InkWell(
               onTap: () {
                 Navigator.push(
