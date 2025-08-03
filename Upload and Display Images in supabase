@@ -1,1 +1,179 @@
+//Upload and Display in same page
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class AddPostPage extends StatefulWidget {
+  const AddPostPage({super.key});
+
+  @override
+  State<AddPostPage> createState() => _AddPostPageState();
+}
+
+class _AddPostPageState extends State<AddPostPage> {
+  final supabase = Supabase.instance.client;
+  List<String> imageUrls = [];
+
+  Future<void> _uploadImages() async {
+    try {
+      final imagePicker = ImagePicker();
+      final pickedFile = await imagePicker.pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
+        final Uint8List fileBytes = await pickedFile.readAsBytes();
+        final String fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
+
+        await supabase.storage.from("images").uploadBinary(fileName, fileBytes);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Successfully Uploaded Image"),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        _fetchAllImages(); // refresh image list
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Image Upload failed: $error"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAllImages();
+  }
+
+  Future<void> _fetchAllImages() async {
+    try {
+      final files = await supabase.storage.from('images').list();
+      final urls = files.map((file) {
+        return supabase.storage.from("images").getPublicUrl(file.name);
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          imageUrls = urls;
+        });
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Can't Fetch Images: $error"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Add Photos"),
+        centerTitle: true,
+        backgroundColor: Colors.cyan,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _uploadImages,
+        backgroundColor: Colors.cyanAccent,
+        label: Text("Select Image"),
+        icon: Icon(Icons.add_photo_alternate_outlined),
+      ),
+      body: imageUrls.isEmpty
+          ? Center(child: Text("No Images Uploaded"))
+          : GridView.builder(
+        itemCount: imageUrls.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 1),
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Image.network(imageUrls[index], fit: BoxFit.cover),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+//Display Images in Different Page
+
+
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class DisplayImages extends StatefulWidget {
+  const DisplayImages({super.key});
+
+  @override
+  State<DisplayImages> createState() => _DisplayImagesState();
+}
+
+class _DisplayImagesState extends State<DisplayImages> {
+  final supabase = Supabase.instance.client;
+  List<String> imageUrls = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAllImages();
+  }
+
+  Future<void> _fetchAllImages() async {
+    try {
+      final files = await supabase.storage.from('images').list();
+
+      final urls = files.map((file) {
+        return supabase.storage.from('images').getPublicUrl(file.name);
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          imageUrls = urls;
+        });
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Can't fetch images: $error"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Posts")),
+      body: imageUrls.isEmpty
+          ? const Center(child: Text("No Images Uploaded"))
+          : GridView.builder(
+        itemCount: imageUrls.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 1, // You can change to 1 if needed
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
+        ),
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Image.network(
+            imageUrls[index],
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+
+    );
+  }
+}
 
